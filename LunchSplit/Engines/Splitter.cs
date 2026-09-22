@@ -20,7 +20,14 @@ public class Splitter
         {
             return 0m;
         }
-
+        if (tipMode == TipMode.Percent)
+        {
+            return subtotal * tipInput / 100m;
+        }
+        if (tipMode == TipMode.Fixed)
+        {
+            return tipInput;
+        }
         return 0m;
     }
 }
