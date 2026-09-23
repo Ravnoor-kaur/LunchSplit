@@ -14,7 +14,11 @@ public class Splitter
     {
         if (subtotal < 0)
         {
-            throw new ArgumentException("Subtotal cannot be negative.");
+            throw new ArgumentOutOfRangeException(nameof(subtotal),"Subtotal cannot be negative.");
+        }
+        if (tipMode == TipMode.Fixed && tipInput < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tipInput), "Fixed tip cannot be negative.");
         }
         if (tipMode == TipMode.None)
         {
@@ -28,6 +32,7 @@ public class Splitter
         {
             return tipInput;
         }
+
         return 0m;
     }
 }

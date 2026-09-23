@@ -67,7 +67,20 @@ public class SplitterTests
         // Act & Assert
         Splitter splitter = new Splitter();
 
-        Assert.ThrowsException<ArgumentException>(() =>
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
             splitter.ComputeTip(subtotal, tipMode, tipInput));
+    }
+
+    [TestMethod]
+    public void ComputeTip_NeagativeFixedTip_ThrowsException()
+    {
+        decimal subtotal = 120m;
+        TipMode tipMode = TipMode.Fixed;
+        decimal tipInput = -10m;
+
+        Splitter splitter = new Splitter();
+
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+         splitter.ComputeTip(subtotal, tipMode, tipInput));
     }
 }
