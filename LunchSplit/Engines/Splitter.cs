@@ -14,7 +14,7 @@ public class Splitter
     {
         if (subtotal < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(subtotal),"Subtotal cannot be negative.");
+            throw new ArgumentOutOfRangeException(nameof(subtotal), "Subtotal cannot be negative.");
         }
         if (tipMode == TipMode.Fixed && tipInput < 0)
         {
@@ -34,5 +34,52 @@ public class Splitter
         }
 
         return 0m;
+    }
+
+    public List<Share> CalculateShares(
+    Bill bill,
+    List<Attendee> attendees,
+    RoundingMode roundingMode)
+    {
+        List<Attendee> includedAttendees =
+            attendees.Where(a => a.Included).ToList();
+
+        if (includedAttendees.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "At least one attendee must be included.");
+        }
+
+        decimal grandTotal =
+            bill.Subtotal +
+            bill.Tax +
+            ComputeTip(bill.Subtotal, bill.TipMode, bill.TipInput);
+
+        int totalWeight =
+    includedAttendees.Sum(a => a.Weight);
+        if (totalWeight <= 0)
+        {
+            throw new InvalidOperationException(
+                "Total attendee weight must be greater than zero.");
+        }
+
+        List<Share> shares = [];
+        foreach (Attendee attendee in attendees)
+        {
+            decimal shareAmount = 0m;
+
+            if (attendee.Included)
+            {
+                shareAmount =
+                    grandTotal * attendee.Weight / totalWeight;
+            }
+            shares.Add(new Share
+            {
+                Name = attendee.Name,
+                Amount = shareAmount
+            });
+        }
+
+        return shares;
     }
 }
