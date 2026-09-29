@@ -37,6 +37,15 @@ public class BillValidator
             };
         }
 
+        if (attendees.Any(a => a.Weight < 0))
+        {
+            return new ValidationResult
+            {
+                IsValid = false,
+                ErrorMessage = "Attendee weight cannot be negative."
+            };
+        }
+
         return new ValidationResult
         {
             IsValid = true,

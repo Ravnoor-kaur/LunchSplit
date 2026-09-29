@@ -142,4 +142,34 @@ public class BillValidatorTests
         Assert.IsFalse(result.IsValid);
         Assert.IsFalse(string.IsNullOrWhiteSpace(result.ErrorMessage));
     }
+
+    [TestMethod]
+    public void Validate_NegativeAttendeeWeight_ReturnsFail()
+    {
+        // Arrange
+        Bill bill = new Bill(
+            100m,
+            10m,
+            TipMode.None,
+            0m);
+
+        List<Attendee> attendees =
+        [
+            new Attendee
+        {
+            Name = "Alice",
+            Weight = -1,
+            Included = true
+        }
+        ];
+
+        BillValidator validator = new BillValidator();
+
+        // Act
+        ValidationResult result =
+            validator.Validate(bill, attendees);
+
+        // Assert
+        Assert.IsFalse(result.IsValid);
+    }
 }
