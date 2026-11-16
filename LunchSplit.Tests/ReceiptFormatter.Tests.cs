@@ -95,6 +95,8 @@ public class ReceiptFormatterTests
     }
 
     [TestMethod]
+    [Ignore("PENDING: CSV Receipt Exporter is out of scope for A3.")]
+
     public void Format_CsvReceiptExporter_MatchesSchema()
     {
        // Not implemented yet
@@ -103,6 +105,8 @@ public class ReceiptFormatterTests
     }
 
     [TestMethod]
+    [Ignore("PENDING: Superseded by A3 Square payment tests (M3-01 to M3-10).")]
+
     public void CalculateShares_PaymentRequest_ValidatesStripeMock()
     {
        // not implemented yet
