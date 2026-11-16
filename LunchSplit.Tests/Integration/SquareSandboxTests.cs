@@ -92,4 +92,28 @@ public class SquareSandboxTests
         Assert.IsFalse(result.IsSuccess);
         Assert.AreEqual("CARD_DECLINED", result.ErrorCode, $"Actual error: {result.ErrorCode} - {result.ErrorMessage}");
     }
+
+    /*
+ * FUNCTION    : M3_10_TransactionStatusQuery_ReturnsCompleted
+ * DESCRIPTION : Makes a successful live payment, then queries
+ *               GET /v2/payments/{payment_id}. Asserts the status
+ *               returned by GetTransactionStatusAsync is COMPLETED.
+ * PARAMETERS  : none
+ * RETURNS     : Task : completes when the test finishes
+ */
+    [TestMethod]
+    public async Task M3_10_TransactionStatusQuery_ReturnsCompleted()
+    {
+        // Arrange: create a payment to look up
+        SquarePaymentService paymentService = new SquarePaymentService();
+        PaymentResult payment = await paymentService.ProcessPaymentAsync(CreateRequest(CardNonceOk));
+        Assert.IsTrue(payment.IsSuccess, $"Setup payment failed: {payment.ErrorCode} - {payment.ErrorMessage}");
+
+        // Act
+        PaymentStatus status = await paymentService.GetTransactionStatusAsync(payment.TransactionId!);
+
+        // Assert
+        Assert.AreEqual(PaymentStatus.Completed, status);
+    }
+
 }
