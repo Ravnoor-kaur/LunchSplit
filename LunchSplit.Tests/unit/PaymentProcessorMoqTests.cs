@@ -51,4 +51,41 @@ public class PaymentProcessorMoqTests
             processor => processor.ProcessPaymentAsync(It.IsAny<PaymentRequest>()),
             Times.Never);
     }
+    /*
+     * FUNCTION    : M3_04_ProcessPayment_PassesExactDollarAmountToProcessor
+     * DESCRIPTION : Verifies PaymentManager passes the exact dollar amount and
+     *               currency to IPaymentProcessor, exactly once (Mock.Verify).
+     * PARAMETERS  : none
+     * RETURNS     : Task : completes when the test finishes
+     */
+    [TestMethod]
+    public async Task M3_04_ProcessPayment_PassesExactDollarAmountToProcessor()
+    {
+        // Arrange: mock gateway that approves every payment
+        decimal expectedAmount = 27.35m;
+        Mock<IPaymentProcessor> mockProcessor = new Mock<IPaymentProcessor>();
+        mockProcessor
+            .Setup(processor => processor.ProcessPaymentAsync(It.IsAny<PaymentRequest>()))
+            .ReturnsAsync(new PaymentResult { IsSuccess = true, TransactionId = "mock-txn-001", HttpStatusCode = 200 });
+
+        PaymentManager paymentManager = new PaymentManager(mockProcessor.Object);
+        PaymentRequest request = new PaymentRequest
+        {
+            AttendeeName = "Jordan",
+            Amount = expectedAmount,
+            CurrencyCode = "CAD",
+            CardNonce = "cnon:card-nonce-ok"
+        };
+
+        // Act
+        PaymentResult result = await paymentManager.ProcessAttendeePaymentAsync(request);
+
+        // Assert: processor received exactly $27.35 CAD, once
+        Assert.IsTrue(result.IsSuccess);
+        mockProcessor.Verify(
+            processor => processor.ProcessPaymentAsync(
+                It.Is<PaymentRequest>(sent => sent.Amount == expectedAmount && sent.CurrencyCode == "CAD")),
+            Times.Once);
+    }
+
 }
