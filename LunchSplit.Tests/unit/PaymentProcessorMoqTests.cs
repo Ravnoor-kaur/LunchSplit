@@ -178,4 +178,35 @@ public class PaymentProcessorMoqTests
         Assert.AreEqual(1, summary.FailureCount);
         Assert.AreEqual("CARD_DECLINED", summary.Results[1].ErrorCode);
     }
+
+    /*
+ * FUNCTION    : M3_03_GatewayNetworkFailure_ThrowsPaymentGatewayTimeoutException
+ * DESCRIPTION : Configures the mock to throw HttpRequestException (a
+ *               dropped network connection). Verifies PaymentManager
+ *               converts it into a PaymentGatewayTimeoutException.
+ * PARAMETERS  : none
+ * RETURNS     : Task : completes when the test finishes
+ */
+    [TestMethod]
+    public async Task M3_03_GatewayNetworkFailure_ThrowsPaymentGatewayTimeoutException()
+    {
+        // Arrange: mock gateway that simulates a network failure
+        Mock<IPaymentProcessor> mockProcessor = new Mock<IPaymentProcessor>();
+        mockProcessor
+            .Setup(processor => processor.ProcessPaymentAsync(It.IsAny<PaymentRequest>()))
+            .ThrowsAsync(new HttpRequestException("Simulated network timeout"));
+
+        PaymentManager paymentManager = new PaymentManager(mockProcessor.Object);
+        PaymentRequest request = new PaymentRequest
+        {
+            AttendeeName = "Riley",
+            Amount = 10.00m,
+            CurrencyCode = "CAD",
+            CardNonce = "cnon:card-nonce-ok"
+        };
+
+        // Act + Assert: the HTTP error is translated into the domain exception
+        await Assert.ThrowsExceptionAsync<PaymentGatewayTimeoutException>(
+            () => paymentManager.ProcessAttendeePaymentAsync(request));
+    }
 }
