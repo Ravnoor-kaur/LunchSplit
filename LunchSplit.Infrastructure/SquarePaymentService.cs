@@ -28,6 +28,8 @@ public class SquarePaymentService : IPaymentProcessor
     private const decimal CentsPerDollar = 100m;
     private const int SuccessStatusCode = 200;
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
+    private const string SquareGenericDeclineCode = "GENERIC_DECLINE";
+    private const string CardDeclinedErrorCode = "CARD_DECLINED";
 
     private readonly SquareClient squareClient;   // Square SDK client (sandbox)
     private readonly string locationId;           // sandbox location that receives payments
@@ -93,12 +95,13 @@ public class SquarePaymentService : IPaymentProcessor
         {
             // Square answered with a 4xx/5xx: report it as a failed payment
             var firstError = exception.Errors?.FirstOrDefault();
+            string? squareErrorCode = firstError?.Code.ToString();
 
             return new PaymentResult
             {
                 IsSuccess = false,
-                ErrorCode = firstError?.Code.ToString(),
-                ErrorMessage = firstError?.Detail ?? exception.Message,
+                ErrorCode = ConvertErrorCode(squareErrorCode),
+                ErrorMessage = $"{squareErrorCode}: {firstError?.Detail ?? exception.Message}",
                 HttpStatusCode = exception.StatusCode
             };
         }
@@ -196,6 +199,26 @@ public class SquarePaymentService : IPaymentProcessor
             default:
                 return PaymentStatus.Unknown;
         }
+    }
+
+    /*
+ * FUNCTION    : ConvertErrorCode
+ * DESCRIPTION : Translates Square-specific error codes into LunchSplit
+ *               domain error codes. Square's sandbox reports a declined
+ *               card as GENERIC_DECLINE, which LunchSplit treats as
+ *               CARD_DECLINED. The original Square code is kept in
+ *               PaymentResult.ErrorMessage.
+ * PARAMETERS  : string? squareErrorCode : error code returned by Square
+ * RETURNS     : string? : LunchSplit domain error code
+ */
+    private static string? ConvertErrorCode(string? squareErrorCode)
+    {
+        if (squareErrorCode == SquareGenericDeclineCode)
+        {
+            return CardDeclinedErrorCode;
+        }
+
+        return squareErrorCode;
     }
 
     /*

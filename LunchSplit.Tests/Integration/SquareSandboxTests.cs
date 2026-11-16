@@ -23,7 +23,10 @@ namespace LunchSplit.Tests.Integration;
 public class SquareSandboxTests
 {
     private const string CardNonceOk = "cnon:card-nonce-ok";
+    private const string CardNonceDeclined = "cnon:card-nonce-declined";
+    private const int BadRequestStatusCode = 400;
     private const decimal DefaultAmount = 12.50m;
+   
 
     /*
      * FUNCTION    : CreateRequest
@@ -65,5 +68,28 @@ public class SquareSandboxTests
         // Assert (message shows the Square error if the call fails)
         Assert.IsTrue(result.IsSuccess, $"Square error: {result.ErrorCode} - {result.ErrorMessage}");
         Assert.IsFalse(string.IsNullOrWhiteSpace(result.TransactionId));
+    }
+
+    /*
+ * FUNCTION    : M3_02_SandboxDecline_DeclinedNonce_ReturnsCardDeclined
+ * DESCRIPTION : Sends a live payment with the cnon:card-nonce-declined
+ *               magic nonce. Asserts IsSuccess is false and the error
+ *               code is CARD_DECLINED.
+ * PARAMETERS  : none
+ * RETURNS     : Task : completes when the test finishes
+ */
+    [TestMethod]
+    public async Task M3_02_SandboxDecline_DeclinedNonce_ReturnsCardDeclined()
+    {
+        // Arrange
+        SquarePaymentService paymentService = new SquarePaymentService();
+        PaymentRequest request = CreateRequest(CardNonceDeclined);
+
+        // Act
+        PaymentResult result = await paymentService.ProcessPaymentAsync(request);
+
+        // Assert
+        Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual("CARD_DECLINED", result.ErrorCode, $"Actual error: {result.ErrorCode} - {result.ErrorMessage}");
     }
 }
