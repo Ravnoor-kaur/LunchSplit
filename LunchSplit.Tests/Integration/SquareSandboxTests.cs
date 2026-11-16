@@ -141,4 +141,27 @@ public class SquareSandboxTests
         Assert.AreEqual(firstResult.TransactionId, secondResult.TransactionId);
     }
 
+    /*
+ * FUNCTION    : M3_08_UnsupportedCurrency_EurToCadLocation_ReturnsHttp400
+ * DESCRIPTION : Sends a live payment in EUR to the CAD sandbox location.
+ *               Asserts IsSuccess is false and Square returns an HTTP 400
+ *               validation error.
+ * PARAMETERS  : none
+ * RETURNS     : Task : completes when the test finishes
+ */
+    [TestMethod]
+    public async Task M3_08_UnsupportedCurrency_EurToCadLocation_ReturnsHttp400()
+    {
+        // Arrange: EUR payment to a CAD location
+        SquarePaymentService paymentService = new SquarePaymentService();
+        PaymentRequest request = CreateRequest(CardNonceOk, "EUR");
+
+        // Act
+        PaymentResult result = await paymentService.ProcessPaymentAsync(request);
+
+        // Assert
+        Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual(BadRequestStatusCode, result.HttpStatusCode, $"Square error: {result.ErrorCode} - {result.ErrorMessage}");
+    }
+
 }
