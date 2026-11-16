@@ -116,4 +116,29 @@ public class SquareSandboxTests
         Assert.AreEqual(PaymentStatus.Completed, status);
     }
 
+    /*
+ * FUNCTION    : M3_09_DuplicateIdempotencyKey_ReturnsSameTransactionWithoutDoubleCharge
+ * DESCRIPTION : Sends the exact same request (same idempotency key)
+ *               twice. Asserts Square returns the original transaction
+ *               ID the second time instead of creating a second charge.
+ * PARAMETERS  : none
+ * RETURNS     : Task : completes when the test finishes
+ */
+    [TestMethod]
+    public async Task M3_09_DuplicateIdempotencyKey_ReturnsSameTransactionWithoutDoubleCharge()
+    {
+        // Arrange: one request, reused for both calls
+        SquarePaymentService paymentService = new SquarePaymentService();
+        PaymentRequest request = CreateRequest(CardNonceOk);
+
+        // Act
+        PaymentResult firstResult = await paymentService.ProcessPaymentAsync(request);
+        PaymentResult secondResult = await paymentService.ProcessPaymentAsync(request);
+
+        // Assert: both succeed and point to the same single payment
+        Assert.IsTrue(firstResult.IsSuccess, $"First call failed: {firstResult.ErrorCode} - {firstResult.ErrorMessage}");
+        Assert.IsTrue(secondResult.IsSuccess, $"Second call failed: {secondResult.ErrorCode} - {secondResult.ErrorMessage}");
+        Assert.AreEqual(firstResult.TransactionId, secondResult.TransactionId);
+    }
+
 }
