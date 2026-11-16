@@ -138,4 +138,44 @@ public class PaymentProcessorMoqTests
             processor => processor.ProcessPaymentAsync(It.IsAny<PaymentRequest>()),
             Times.Exactly(4));
     }
+
+    /*
+ * FUNCTION    : M3_07_PartialBatchFailure_ReportsTwoSuccessesOneFailure
+ * DESCRIPTION : In a 3-attendee batch, the mock declines attendee #2 and
+ *               approves #1 and #3. Verifies the batch keeps going after
+ *               the failure and reports 2 successes and 1 failure.
+ * PARAMETERS  : none
+ * RETURNS     : Task : completes when the test finishes
+ */
+    [TestMethod]
+    public async Task M3_07_PartialBatchFailure_ReportsTwoSuccessesOneFailure()
+    {
+        // Arrange: approve everyone by default...
+        Mock<IPaymentProcessor> mockProcessor = new Mock<IPaymentProcessor>();
+        mockProcessor
+            .Setup(processor => processor.ProcessPaymentAsync(It.IsAny<PaymentRequest>()))
+            .ReturnsAsync(new PaymentResult { IsSuccess = true, TransactionId = "mock-txn", HttpStatusCode = 200 });
+
+        // ...but decline attendee #2 (later setups take priority in Moq)
+        mockProcessor
+            .Setup(processor => processor.ProcessPaymentAsync(
+                It.Is<PaymentRequest>(request => request.AttendeeName == "Attendee2")))
+            .ReturnsAsync(new PaymentResult { IsSuccess = false, ErrorCode = "CARD_DECLINED", HttpStatusCode = 400 });
+
+        PaymentManager paymentManager = new PaymentManager(mockProcessor.Object);
+        List<PaymentRequest> requests =
+        [
+            new PaymentRequest { AttendeeName = "Attendee1", Amount = 15.00m, CardNonce = "cnon:card-nonce-ok" },
+            new PaymentRequest { AttendeeName = "Attendee2", Amount = 15.00m, CardNonce = "cnon:card-nonce-declined" },
+            new PaymentRequest { AttendeeName = "Attendee3", Amount = 15.00m, CardNonce = "cnon:card-nonce-ok" }
+        ];
+
+        // Act
+        BatchPaymentSummary summary = await paymentManager.ProcessBatchAsync(requests);
+
+        // Assert: 2 succeeded, 1 failed, and attendee #2 is the failure
+        Assert.AreEqual(2, summary.SuccessCount);
+        Assert.AreEqual(1, summary.FailureCount);
+        Assert.AreEqual("CARD_DECLINED", summary.Results[1].ErrorCode);
+    }
 }
