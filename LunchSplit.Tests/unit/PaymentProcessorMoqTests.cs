@@ -7,6 +7,8 @@
 
 using LunchSplit.Payments;
 using Moq;
+using LunchSplit.Engines;
+using LunchSplit.Models;
 
 namespace LunchSplit.Tests.Unit;
 
@@ -88,4 +90,52 @@ public class PaymentProcessorMoqTests
             Times.Once);
     }
 
+    /*
+ * FUNCTION    : M3_06_FourAttendeeSplit_CallsProcessorExactlyFourTimes
+ * DESCRIPTION : Splits an $80 bill between 4 attendees using the A1
+ *               Splitter, then charges each share. Verifies
+ *               ProcessPaymentAsync is called exactly 4 times.
+ * PARAMETERS  : none
+ * RETURNS     : Task : completes when the test finishes
+ */
+    [TestMethod]
+    public async Task M3_06_FourAttendeeSplit_CallsProcessorExactlyFourTimes()
+    {
+        // Arrange: split an $80 bill evenly between 4 attendees (A1 engine)
+        Bill bill = new Bill(80.00m, 0.00m, TipMode.None, 0m);
+        List<Attendee> attendees =
+        [
+            new Attendee { Name = "Alex",   Weight = 1, Included = true },
+            new Attendee { Name = "Bailey", Weight = 1, Included = true },
+            new Attendee { Name = "Casey",  Weight = 1, Included = true },
+            new Attendee { Name = "Devon",  Weight = 1, Included = true }
+        ];
+        List<Share> shares = new Splitter().CalculateShares(bill, attendees, RoundingMode.None);
+
+        // turn each share into a payment request
+        List<PaymentRequest> requests = shares
+            .Select(share => new PaymentRequest
+            {
+                AttendeeName = share.Name,
+                Amount = share.Amount,
+                CurrencyCode = "CAD",
+                CardNonce = "cnon:card-nonce-ok"
+            })
+            .ToList();
+
+        Mock<IPaymentProcessor> mockProcessor = new Mock<IPaymentProcessor>();
+        mockProcessor
+            .Setup(processor => processor.ProcessPaymentAsync(It.IsAny<PaymentRequest>()))
+            .ReturnsAsync(new PaymentResult { IsSuccess = true, TransactionId = "mock-txn", HttpStatusCode = 200 });
+        PaymentManager paymentManager = new PaymentManager(mockProcessor.Object);
+
+        // Act
+        BatchPaymentSummary summary = await paymentManager.ProcessBatchAsync(requests);
+
+        // Assert: one gateway call per attendee, all succeeded
+        Assert.AreEqual(4, summary.SuccessCount);
+        mockProcessor.Verify(
+            processor => processor.ProcessPaymentAsync(It.IsAny<PaymentRequest>()),
+            Times.Exactly(4));
+    }
 }
