@@ -90,3 +90,31 @@ $3.33
 $3.33
 
 Total = $10.00
+
+## Assignment 3 – Square Payment Gateway Integration
+
+### Project layout
+See `CODEMAP.md` for source and test paths.
+- `LunchSplit` – core domain (`Payments/IPaymentProcessor`, DTOs, `PaymentManager`)
+- `LunchSplit.Infrastructure` – `SquarePaymentService` (Square .NET SDK, Sandbox)
+- `LunchSplit.Tests/unit` – Tier 2 Moq tests (M3-03 to M3-07)
+- `LunchSplit.Tests/Integration` – Tier 1 live Square Sandbox tests (M3-01, M3-02, M3-08, M3-09, M3-10)
+
+### Square Sandbox credentials
+Credentials are NOT stored in source code. Set these environment variables before running tests:
+
+    setx SQUARE_SANDBOX_ACCESS_TOKEN "your-sandbox-access-token"
+    setx SQUARE_SANDBOX_LOCATION_ID "your-sandbox-location-id"
+
+Restart the terminal afterwards. The sandbox location must use CAD (required by M3-08).
+
+### Running the tests
+    dotnet test
+
+Live Square calls use a 5 second timeout with no retries, so the test run never hangs.
+
+### Notes
+- Square's current Sandbox returns `GENERIC_DECLINE` for `cnon:card-nonce-declined`.
+  `SquarePaymentService` translates this to the domain code `CARD_DECLINED` (M3-02).
+- Two Assignment 1 placeholder tests are marked `[Ignore]` because they were
+  never-implemented PENDING stubs.
